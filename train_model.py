@@ -30,17 +30,17 @@ for imagePath in sorted(list(paths.list_images(args['dataset']))):
     # load the image, pre-process it, and store in the data list
     image = cv2.imread(imagePath)
     image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    image = imutils.resize(image, width=28)
+    image = imutils.resize(image, width=28) # 28 x 28 x 1
     image = img_to_array(image)
     data.append(image)
 
     # extravt the class label from the image path and update the labels list
-    label = imagePath.split(os.path.sep)[-3]
+    label = imagePath.split(os.path.sep)[-3] # C:\Users\Balaji\Documents\Smile-Detector\SMILEs\positives\positives7\3.jpg
     label = 'smiling' if label == 'positives' else 'not_smiling'
     labels.append(label)
 
 # scale the raw pixel intensities to the range [0, 1]
-data = np.array(data, dtype='float') / 255.0
+data = np.array(data, dtype='float') / 255.0 # 0 to 255
 labels = np.array(labels)
 
 # convert the labels from integers to vectors
@@ -49,7 +49,11 @@ labels = np_utils.to_categorical(le.transform(labels), 2)
 
 # account for skew in the labeled data
 classTotals = labels.sum(axis=0)
-classWeight = classTotals.max() / classTotals
+classWeight = dict()
+
+
+for i in range(0, len(classTotals)):
+    classWeight[i] = classTotals.max() / classTotals[i]
 
 # partition the data into training and testing sploits using 80% of
 # the data for training and the remaining 20% for testing
@@ -62,7 +66,7 @@ model.compile(loss=['binary_crossentropy'], optimizer='adam', metrics=['accuracy
 
 # train the network
 print('[INFO] training network...')
-H = model.fit(trainX, trainY, validation_data=(testX, testY), batch_size=64, epochs=15, verbose=1)
+H = model.fit(trainX, trainY, validation_data=(testX, testY), class_weight=classWeight, batch_size=64, epochs=15, verbose=1)
 
 # evaluate the network
 print('[INFO] evaluating network...')
